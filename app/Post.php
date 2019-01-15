@@ -14,6 +14,11 @@ class Post extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function scopeRecordsByStatus($query, $status)
+    {
+        return $query->where('status_id', $status);
+    }
+
     public function isNotActive()
     {
         return $this->status_id === 0;

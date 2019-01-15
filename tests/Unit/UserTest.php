@@ -25,71 +25,58 @@ class UserTest extends TestCase
         factory(Post::class, 5)->create(['user_id' => $this->User2->id]);
     }
 
-    public function testSetHasInactiveLastRecords()
+    public function testLastRecordsByUser1AreActivated()
     {
-        $posts = Post::where('user_id', $this->User1->id)
-            ->orderBy('id', 'DESC')
-            ->skip(0)
-            ->take(2)
-            ->get();
+        // Statement 1.1: all (last two) records are inactive
+        $inactivePosts = $this->User1->getInactivePosts()->count();
+        $this->assertEquals(5, $inactivePosts);
 
-        $this->assertTrue($posts->first()->isNotActive());
-        $this->assertTrue($posts->last()->isNotActive());
-
-    }
-
-    public function testActivateLastRecord()
-    {
+        // Statement 1.1: the last record is being activated
+        // Statement 1.2: the last record is active, the previous record is inactive
         $this->User1->setLastPostActive();
 
-        $posts = Post::where('user_id', $this->User1->id)
-            ->orderBy('id', 'DESC')
-            ->skip(0)
-            ->take(2)
-            ->get();
+        $lastPost = $this->User1->getPostsReversed(1)->first();
+        $this->assertTrue($lastPost->isActive());
 
-        $this->assertTrue($posts->first()->isActive());
-        $this->assertTrue($posts->last()->isNotActive());
-
-        $inactivePosts = Post::where('user_id', $this->User1->id)->where('status_id', 0)->count();
+        $inactivePosts = $this->User1->getInactivePosts()->count();
         $this->assertEquals(4, $inactivePosts);
 
-    }
-
-    public function testActivatePreviousRecord()
-    {
-        $this->User1->setLastPostActive();
+        // Statement 1.2: the previous record is being activated
         $this->User1->setLastPostActive();
 
-        $posts = Post::where('user_id', $this->User1->id)
-            ->orderBy('id', 'DESC')
-            ->skip(0)
-            ->take(2)
-            ->get();
+        $lastPosts = $this->User1->getPostsReversed(2);
 
-        $this->assertTrue($posts->first()->isActive());
-        $this->assertTrue($posts->last()->isActive());
+        $this->assertTrue($lastPosts->first()->isActive());
+        $this->assertTrue($lastPosts->last()->isActive());
 
-        $inactivePosts = Post::where('user_id', $this->User1->id)->where('status_id', 0)->count();
+        $inactivePosts = $this->User1->getInactivePosts()->count();
         $this->assertEquals(3, $inactivePosts);
 
-        $inactivePosts = Post::where('user_id', $this->User2->id)->where('status_id', 0)->count();
+        // Statement 1.3: the tested method has no effect on another user`s records
+        $inactivePosts = $this->User2->getInactivePosts()->count();
         $this->assertEquals(5, $inactivePosts);
+
     }
 
     public function testInactivePostsDeletion()
     {
+        // Activating two last records
         $this->User1->setLastPostActive();
         $this->User1->setLastPostActive();
+
+        // Deleting inactive records
         $this->User1->deleteInactivePosts();
 
-        $inactivePosts = Post::where('user_id', $this->User1->id)->where('status_id', 0)->count();
+        // Statement 2.2: the method deletes inactive records
+        $inactivePosts = $this->User1->getInactivePosts()->count();
         $this->assertEquals(0, $inactivePosts);
 
-        $inactivePosts = Post::where('user_id', $this->User1->id)->where('status_id', 1)->count();
-        $this->assertEquals(2, $inactivePosts);
+        // Statement 2.3: the method keeps active records
+        $activePosts = $this->User1->getActivePosts()->count();
+        $this->assertEquals(2, $activePosts);
 
-        $inactivePosts = Post::where('user_id', $this->User2->id)->where('status_id', 0)->count();
+        // Statement 2.1: the tested method has no effect on another user`s records
+        $inactivePosts = $this->User2->getInactivePosts()->count();
         $this->assertEquals(5, $inactivePosts);
     }
 }

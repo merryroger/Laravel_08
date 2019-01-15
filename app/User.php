@@ -35,10 +35,28 @@ class User extends Authenticatable
         return $this->hasMany(Post::class);
     }
 
+    public function getPostsReversed($count)
+    {
+        return $this->posts()
+            ->orderByDesc('id')
+            ->skip(0)
+            ->take($count)
+            ->get();
+    }
+
+    public function getInactivePosts()
+    {
+        return $this->posts()->recordsByStatus(0);
+    }
+
+    public function getActivePosts()
+    {
+        return $this->posts()->recordsByStatus(1);
+    }
+
     public function setLastPostActive()
     {
-        $this->posts()
-            ->where('status_id', 0)
+        $this->getInactivePosts()
             ->get()
             ->last()
             ->setActive();
@@ -46,10 +64,9 @@ class User extends Authenticatable
 
     public function deleteInactivePosts()
     {
-        $this->posts()
-            ->where('status_id', 0)
+        $this->getInactivePosts()
             ->get()
-            ->filter(function ($item) {
+            ->map(function ($item) {
                 $item->delete();
             });
     }
