@@ -66,9 +66,8 @@ class User extends Authenticatable
     {
         $this->getInactivePosts()
             ->get()
-            ->map(function ($item) {
-                $item->delete();
-            });
+            ->map
+            ->delete();
     }
 
 }
