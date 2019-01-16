@@ -53,7 +53,7 @@ class UserTest extends TestCase
         $lastPosts = $this->User1->getPostsReversed(2);
 
         // Statement 1.2: the previous record is being activated
-        // $this->assertTrue($lastPosts->first()->isActive());
+        /* $this->assertTrue($lastPosts->first()->isActive()); */
         $this->assertTrue($lastPosts->last()->isActive());
 
         $inactivePosts = $this->User1->getInactivePosts()->count();
