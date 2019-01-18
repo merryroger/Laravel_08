@@ -25,19 +25,41 @@ class UserTest extends TestCase
         factory(Post::class, 5)->create(['user_id' => $this->User2->id]);
     }
 
-    public function testLastTwoRecordsAreInactive()
+    public function testGetPostsReversed()
     {
-        // Statement 1.1: all (last two) records are inactive
+        $posts = $this->User1->getPostsReversed(5);
+        for ($i = 5; $i > 0; $i--) {
+            $this->assertEquals($i, $posts[5 - $i]->id);
+        }
+    }
+
+    public function testGetInactivePosts()
+    {
         $inactivePosts = $this->User1->getInactivePosts()->count();
         $this->assertEquals(5, $inactivePosts);
     }
 
-    public function testTheLastRecordByUser1IsActivated()
+    public function testGetActivePosts()
     {
-        // Statement 1.1: the last record is being activated
+        $this->User1->setLastPostActive();
         $this->User1->setLastPostActive();
 
-        // Statement 1.2: the last record is active, the previous record is inactive
+        $activePosts = $this->User1->getActivePosts()->count();
+        $this->assertEquals(2, $activePosts);
+    }
+
+    public function testLastTwoRecordsAreInactive()
+    {
+        $lastPosts = $this->User1->getPostsReversed(2);
+        foreach ($lastPosts as $post) {
+            $this->assertFalse($post->isActive());
+        }
+    }
+
+    public function testSetLastPostActive()
+    {
+        $this->User1->setLastPostActive();
+
         $lastPost = $this->User1->getPostsReversed(1)->first();
         $this->assertTrue($lastPost->isActive());
 
@@ -45,57 +67,53 @@ class UserTest extends TestCase
         $this->assertEquals(4, $inactivePosts);
     }
 
-    public function testLastTwoRecordsByUser1AreActivated()
+    public function testSetLastPostActiveActivatesLastTwoRecords()
     {
         $this->User1->setLastPostActive();
         $this->User1->setLastPostActive();
 
         $lastPosts = $this->User1->getPostsReversed(2);
 
-        // Statement 1.2: the previous record is being activated
-        /* $this->assertTrue($lastPosts->first()->isActive()); */
-        $this->assertTrue($lastPosts->last()->isActive());
+        foreach ($lastPosts as $post) {
+            $this->assertTrue($post->isActive());
+        }
 
         $inactivePosts = $this->User1->getInactivePosts()->count();
         $this->assertEquals(3, $inactivePosts);
     }
 
-    public function testActivationMethodHasNotAffectOnAnotherUsersRecords()
+    public function testSetLastPostActiveHasNotAffectOnAnotherUsersRecords()
     {
         $this->User1->setLastPostActive();
 
-        // Statement 1.3: the tested method has not affect on another user`s records
         $inactivePosts = $this->User2->getInactivePosts()->count();
         $this->assertEquals(5, $inactivePosts);
     }
 
-    public function testDeletionMethodHasNotAffectOnAnotherUsersRecords()
+    public function testDeleteInactivePostsHasNotAffectOnAnotherUsersRecords()
     {
         $this->User1->setLastPostActive();
         $this->User1->deleteInactivePosts();
 
-        // Statement 2.1: the tested method has not affect on another user`s records
         $inactivePosts = $this->User2->getInactivePosts()->count();
         $this->assertEquals(5, $inactivePosts);
     }
 
-    public function testDeletionMethodRemovesInactivePosts()
+    public function testDeleteInactivePosts()
     {
         $this->User1->setLastPostActive();
         $this->User1->deleteInactivePosts();
 
-        // Statement 2.2: the method removes inactive records
         $inactivePosts = $this->User1->getInactivePosts()->count();
         $this->assertEquals(0, $inactivePosts);
 
     }
 
-    public function testDeletionMethodKeepsActivePosts()
+    public function testDeleteInactivePostsKeepsActivePosts()
     {
         $this->User1->setLastPostActive();
         $this->User1->deleteInactivePosts();
 
-        // Statement 2.3: the method keeps active records
         $activePosts = $this->User1->getActivePosts()->count();
         $this->assertEquals(1, $activePosts);
 
